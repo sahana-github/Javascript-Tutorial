@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Excle reader</title>
+    <style>
+      .sheetBox {
+        margin: 10px auto;
+        background-color: rgb(247, 247, 247);
+        padding: 10px 5px;
+        box-sizing: border-box;
+      }
+
+      .sheetBox h3 {
+        color: #072c00;
+        margin-bottom: 5px;
+        margin-top: 0px;
+        margin-left: auto;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
+          sans-serif;
+        font-size: 28px;
+        line-height: 3rem;
+
+        background: -moz-linear-gradient(90deg, #62d84e 50%, #06060600 50%);
+        background: -webkit-linear-gradient(90deg, #62d84e 50%, #06060600 50%);
+        background: linear-gradient(90deg, #62d84e 50%, #06060600 50%);
+        filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#62d84e",endColorstr="#060606",GradientType=1);
+        background-size: 205% 0.2rem;
+        background-position: 100% 100%;
+        background-repeat: no-repeat;
+        transition: all 0.4s cubic-bezier(0.4, 0, 1, 1);
+        cursor: pointer;
+      }
+
+      .sheetBox h3:hover {
+        background-size: 105% 0.2rem;
+      }
+
+      .inputBox:hover {
+        box-shadow: 2px 8px 20px 0px #00000047;
+      }
+      .inputBox {
+        display: flex;
+        flex-direction: row;
+
+        flex-wrap: wrap;
+        justify-content: center;
+        width: fit-content;
+        padding: 0;
+        margin: 12px auto;
+        box-shadow: 1px 2px 20px 0px #00000047;
+        transition: all 0.2s cubic-bezier(0.4, 0, 1, 1);
+      }
+
+      .inputs {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .sheetBox label:nth-last-child() {
+        border-right: 2px solid black !important;
+      }
+      .sheetBox label {
+        background: #62d84e;
+        height: auto;
+        width: 100%;
+        border: 2px solid black;
+        border-right: none;
+        color: #ffffff;
+        font-weight: 700;
+        text-align: center;
+        padding: 5px 4px;
+        box-sizing: border-box;
+      }
+
+      .inputBox:nth-last-child(1) {
+        border-right: 2px solid black !important;
+      }
+
+      .sheetBox input {
+        height: auto;
+        width: 100%;
+        border: 2px solid black;
+        border-right: none;
+        font-weight: 700;
+        border-top: none;
+        padding: 5px 4px;
+        padding: 5px 5px;
+        box-sizing: border-box;
+      }
+
+      input {
+        outline: none !important;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h2>Excel Reader</h2>
+    <label for="file-input">Select your file:</label>
+    <input type="file" id="file-input" />
+    <br />
+
+    <div id="tables"></div>
+
+    <script>
+      console.log("Shree Ganesh ");
+      const fileInput = document.getElementById("file-input");
+
+      const sheets = {};
+      const columnNames = {};
+      const Datalist = {};
+      const tablecont = document.getElementById("tables");
+
+      fileInput.addEventListener("change", (event) => {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = (event) => {
+          const data = event.target.result;
+          const workbook = XLSX.read(data, { type: "binary" });
+          console.log(workbook);
+
+          const sheetNames = workbook.SheetNames;
+          console.log(sheetNames);
+          sheetNames.forEach((sheetName) => {
+            const sheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(sheet);
+            sheets[sheetName] = jsonData;
+            const columnNamesArray = [];
+            Datalist[sheetName] = [];
+            for (const columnName in sheets[sheetName][0]) {
+              columnNamesArray.push(columnName);
+            }
+            //get all columns
+            columnNames[sheetName] = columnNamesArray;
+            let Container = document.createElement("div");
+            Container.setAttribute("id", sheetName);
+            Container.setAttribute("class", "sheetBox");
+            let title = document.createElement("h3");
+            title.textContent = sheetName;
+            Container.appendChild(title);
+            Container.appendChild(document.createElement("span"));
+            let inputBox = document.createElement("div"); //new
+            inputBox.setAttribute("class", "inputBox"); //new
+
+            columnNames[sheetName].forEach((column) => {
+              let values = [];
+              for (const row in sheets[sheetName]) {
+                values.push(sheets[sheetName][row][column]);
+              }
+              values = [...new Set(values)];
+              Datalist[sheetName][column] = values;
+
+              console.log("Unique data Saved in Datalist for " + sheetName);
+              let DatalistItem = document.createElement("datalist");
+              let sheetNameNW = sheetName.replace(/\s/g, "");
+              let columnNW = column.replace(/\s/g, "");
+
+              DatalistItem.setAttribute("id", sheetNameNW + columnNW);
+              values.forEach((value) => {
+                let option = document.createElement("option");
+                option.value = value;
+                console.log(value);
+                DatalistItem.appendChild(option);
+              });
+              let input = document.createElement("input");
+              input.setAttribute("list", sheetNameNW + columnNW);
+              input.setAttribute("fromsheet", sheetName);
+              input.setAttribute("fromcolumn", column);
+              input.setAttribute(
+                "oninput",
+                "Reader(this.getAttribute('fromsheet'), this.getAttribute('fromcolumn'), this.value)"
+              );
+              let inputl = document.createElement("label");
+              inputl.setAttribute("for", sheetNameNW + columnNW);
+              inputl.textContent = column;
+              let inputs = document.createElement("div"); //new
+              inputs.setAttribute("class", "inputs"); //new
+
+              inputs.appendChild(inputl);
+              inputs.appendChild(input);
+              inputBox.appendChild(inputs); //new
+              Container.appendChild(DatalistItem);
+            });
+            Container.appendChild(inputBox); //new
+
+            tablecont.appendChild(Container);
+          });
+        };
+
+        reader.readAsBinaryString(file);
+      });
+
+      let Reader = (fromsheet, fromcolumn, value) => {
+        console.log("this is from sheet : " + fromsheet);
+        let rownum;
+        for (let i = 0; i < sheets[fromsheet].length; i++) {
+          if (
+            sheets[fromsheet][i][fromcolumn].toLowerCase() ===
+            value.trim().toLowerCase()
+          ) {
+            console.log("i got you ");
+            rownum = i;
+          }
+        }
+        console.log(rownum);
+        if (rownum != undefined) {
+          columnNames[fromsheet].forEach((column) => {
+            let ele = document.querySelector(
+              `[fromsheet="${fromsheet}"][fromcolumn="${column}"]`
+            );
+            ele.value = sheets[fromsheet][rownum][column];
+            console.log(sheets[fromsheet][rownum][column]);
+          });
+        } else {
+        }
+      };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  </body>
+</html>
